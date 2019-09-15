@@ -1,16 +1,22 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { YoutubeListComponent } from './youtube-list.component';
+import { YoutubeComponent } from './youtube.component';
 import { YoutubeService } from './youtube.service';
 import { HttpClientModule } from '@angular/common/http';
+import { ScrollingModule } from '@angular/cdk/scrolling';
+import {ReactiveFormsModule} from '@angular/forms';
+import {YoutubeTopComponent} from './youtube-top.component';
+import { YoutubeFavoritesComponent } from './youtube-favorites.component';
 
 @NgModule({
-  declarations: [YoutubeListComponent],
+  declarations: [YoutubeComponent, YoutubeTopComponent, YoutubeFavoritesComponent],
   imports: [
     CommonModule,
-    HttpClientModule
+    HttpClientModule,
+    ScrollingModule,
+    ReactiveFormsModule
   ],
-  exports: [YoutubeListComponent],
-  providers: [YoutubeService]
+  exports: [YoutubeComponent],
+  // providers: [YoutubeService]
 })
 export class YoutubeModule { }

@@ -1,0 +1,17 @@
+<cdk-virtual-scroll-viewport itemSize="50" (scrolledIndexChange)="onItemScrolled($event)">
+  <ol>
+    <li *cdkVirtualFor="let video of topVideos">
+      <ng-container *ngIf="video !== 'loading'; else loaderIndicator">
+        {{video.title}}
+
+        <label>
+          Favorite
+          <input type="checkbox" [formControl]="video.isFavorite"/>
+        </label>
+      </ng-container>
+      <ng-template #loaderIndicator>
+        <span>Loading...</span>
+      </ng-template>
+    </li>
+  </ol>
+</cdk-virtual-scroll-viewport>
