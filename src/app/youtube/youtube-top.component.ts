@@ -1,11 +1,12 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
-import {IVideoSearch, YoutubeService} from './youtube.service';
-import {takeUntil} from 'rxjs/operators';
-import {arrayMap} from '@app/utils/rxjs';
-import {Subscription} from 'rxjs';
-import {Throttle} from 'lodash-decorators';
-import {BaseVideoListComponent, IVideoVM} from '@app/youtube/base-video-list.component';
-import {FavoritesService} from '@app/youtube/favorites.service';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
+import { IVideo, IVideoSearch, YoutubeService } from './youtube.service';
+import { takeUntil } from 'rxjs/operators';
+import { arrayMap } from '@app/utils/rxjs';
+import { Subscription } from 'rxjs';
+import { Throttle } from 'lodash-decorators';
+import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
+import { FavoritesService } from '@app/youtube/favorites.service';
+import { IVideoVM } from '@app/youtube/ivideo-vm';
 
 @Component({
   selector: 'ints-youtube-top',
@@ -20,7 +21,7 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
   }
 
   @Input()
-  set query(value: string|null) {
+  set query(value: string | null) {
     if (this._query === value)
       return;
 
@@ -29,12 +30,15 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
     this._searchVideo(this._query);
   }
 
-  private _query: string|null = null;
+  private _query: string | null = null;
 
-  private _currentVideoSearch: IVideoSearch;
+  private _currentVideoSearch: AsyncIterableIterator<IVideo[]> | null = null;
+  // @ts-ignore
+  // private _currentVideoSearch: IVideoSearch;
+
   private _items: IVideoVM[] = [];
-  private _chunkResultSubscription: Subscription | null;
-  private readonly _requestLength: number;
+  private _nextChunkSubscription: Subscription | null = null;
+  private readonly _requestLength = this._youtube.maxItemsInResponse;
 
   constructor(
     private _youtube: YoutubeService,
@@ -43,61 +47,68 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
   ) {
     super(favoritesStorage);
 
-    this._requestLength = _youtube.maxRequestLength;
-
     this._searchVideo();
   }
 
-  private _searchVideo(query?: string|null) {
-    if(this._chunkResultSubscription != null)
-      this._chunkResultSubscription.unsubscribe();
+  private _searchVideo(query?: string | null) {
+    if (this._currentVideoSearch !== null && this._currentVideoSearch.return)
+      this._currentVideoSearch.return();
 
-    this._currentVideoSearch = this._youtube.initTopVideoSearch(query);
+    this._currentVideoSearch = this._youtube.initVideoSearch2(query);
 
     this._requestNextChunk();
   }
 
   private _requestNextChunk() {
-    const self = this;
-
-    this._chunkResultSubscription =
-      this._currentVideoSearch
-        .getChunk(this._requestLength)
-        .pipe(
-          takeUntil(this.destroy),
-          arrayMap(this._toVM)
-        )
-        .subscribe(dataChunk => {
-          this._items.push(...dataChunk);
-
-          this._cdr.markForCheck();
-        });
-
-    this._chunkResultSubscription
-      .add(() => this._chunkResultSubscription = null);
+    if (this._currentVideoSearch === null)
+      return;
   }
 
-  private *_topVideos() {
-    for (let item of this._items)
-      yield item;
+  // private _searchVideo(query?: string | null) {
+  //   if (this._nextChunkSubscription != null)
+  //     this._nextChunkSubscription.unsubscribe();
+  //
+  //   this._currentVideoSearch = this._youtube.initTopVideoSearch(query);
+  //
+  //   this._requestNextChunk();
+  // }
 
-    if(this._dataLoading)
+  // private _requestNextChunk() {
+  //   if (this._nextChunkSubscription === null || this._currentVideoSearch.finished)
+  //     return;
+  //
+  //   this._nextChunkSubscription =
+  //     this._currentVideoSearch
+  //       .getNextChunk(this._requestLength)
+  //       .pipe(
+  //         takeUntil(this.destroy),
+  //         arrayMap(this._toVM)
+  //       )
+  //       .subscribe(
+  //         dataChunk => this._items.push(...dataChunk)
+  //       );
+  //
+  //   this._nextChunkSubscription
+  //     .add(() => {
+  //       this._nextChunkSubscription = null;
+  //       this._cdr.markForCheck();
+  //     });
+  // }
+
+  private* _topVideos() {
+    yield* this._items;
+
+    if (this._nextChunkSubscription !== null)
       yield 'loading';
   }
 
+  //TODO как тут будет работать change detection
   @Throttle(300)
   onItemScrolled(scrolledItems: number) {
-    if (this._dataLoading)
-      return;
-
     const itemsLeft = this._items.length - scrolledItems;
 
-    if(itemsLeft <= this._requestLength)
+    if (itemsLeft <= this._requestLength)
       this._requestNextChunk();
-  }
-
-  private get _dataLoading(): boolean {
-    return this._chunkResultSubscription != null;
   }
 }
 

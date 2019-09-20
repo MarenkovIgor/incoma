@@ -7,9 +7,10 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
 import {ReactiveFormsModule} from '@angular/forms';
 import {YoutubeTopComponent} from './youtube-top.component';
 import { YoutubeFavoritesComponent } from './youtube-favorites.component';
+import { YoutubeVideoComponent } from './youtube-video.component';
 
 @NgModule({
-  declarations: [YoutubeComponent, YoutubeTopComponent, YoutubeFavoritesComponent],
+  declarations: [YoutubeComponent, YoutubeTopComponent, YoutubeFavoritesComponent, YoutubeVideoComponent],
   imports: [
     CommonModule,
     HttpClientModule,

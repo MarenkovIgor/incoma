@@ -1,9 +1,9 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {YoutubeService} from '@app/youtube/youtube.service';
-import {FavoritesService} from '@app/youtube/favorites.service';
-import {map, switchMap} from 'rxjs/operators';
-import {BaseVideoListComponent} from '@app/youtube/base-video-list.component';
-import {arrayMap} from '@app/utils/rxjs';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { YoutubeService } from '@app/youtube/youtube.service';
+import { FavoritesService } from '@app/youtube/favorites.service';
+import { map, switchMap } from 'rxjs/operators';
+import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
+import { arrayMap } from '@app/utils/rxjs';
 
 @Component({
   selector: 'ints-youtube-favorites',

@@ -1,6 +1,17 @@
 {
   "extends": "tslint:recommended",
   "rules": {
+    "comment-format": false,
+    "no-trailing-whitespace": false,
+    "curly": [true, "as-needed"],
+    "variable-name": {
+      "options": [
+        "ban-keywords",
+        "check-format",
+        "allow-leading-underscore",
+        "allow-pascal-case"
+      ]
+    },
     "array-type": false,
     "arrow-parens": false,
     "deprecation": {
@@ -32,17 +43,7 @@
       140
     ],
     "member-access": false,
-    "member-ordering": [
-      true,
-      {
-        "order": [
-          "static-field",
-          "instance-field",
-          "static-method",
-          "instance-method"
-        ]
-      }
-    ],
+    "member-ordering": false,
     "no-consecutive-blank-lines": false,
     "no-console": [
       true,

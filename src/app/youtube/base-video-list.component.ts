@@ -5,7 +5,7 @@ import { FavoritesService } from './favorites.service';
 import { AutoUnsubscribe } from '@app/utils/auto-unsubscribe';
 
 export abstract class BaseVideoListComponent extends AutoUnsubscribe {
-  constructor(protected _favorites: FavoritesService) {
+  protected constructor(protected _favorites: FavoritesService) {
     super();
   }
 
@@ -14,7 +14,7 @@ export abstract class BaseVideoListComponent extends AutoUnsubscribe {
     return {
       ...video,
       isFavorite: this._createFavoriteControl(video.id)
-    }
+    };
   }
 
   protected _createFavoriteControl(videoId) {
@@ -31,6 +31,3 @@ export abstract class BaseVideoListComponent extends AutoUnsubscribe {
   }
 }
 
-export interface IVideoVM extends IVideo {
-  isFavorite: FormControl;
-}
