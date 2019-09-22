@@ -3,8 +3,9 @@
   <input type="text" [formControl]="searchInput"/>
 </label>
 
-<cdk-virtual-scroll-viewport itemSize="50"  (scrolledIndexChange)="onItemScrolled()" >
+<!--(scrolledIndexChange)="onItemScrolled()"-->
 
+<cdk-virtual-scroll-viewport itemSize="50">
     <div *cdkVirtualFor="let video of items" class="video-item">
       <ints-youtube-video *ngIf="video !== 'loading'; else loaderIndicator" [data]="video">
       </ints-youtube-video>
@@ -12,5 +13,4 @@
         <span>Loading...</span>
       </ng-template>
     </div>
-
 </cdk-virtual-scroll-viewport>

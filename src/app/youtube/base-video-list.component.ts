@@ -2,7 +2,7 @@ import { IVideo } from './youtube.service';
 import { FormControl } from '@angular/forms';
 import { Bind } from 'lodash-decorators';
 import { FavoritesService } from './favorites.service';
-import { AutoUnsubscribe } from '@app/utils/auto-unsubscribe';
+import { AutoUnsubscribe } from '@app/common/auto-unsubscribe';
 import { takeUntil } from 'rxjs/operators';
 import { IVideoVM } from '@app/youtube/ivideo-vm';
 

@@ -13,7 +13,7 @@ import { YOUTUBE_API_KEY } from '@app/youtube/api-key.token';
     BrowserModule,
     YoutubeModule
   ],
-  providers: [{ provide: YOUTUBE_API_KEY, useValue: 'AIzaSyABzQ8kOWeFw5OnRqwwCwYAgorvJ3PqtMM' }],
+  providers: [{ provide: YOUTUBE_API_KEY, useValue: 'AIzaSyATXbRFZUYXGY-guuXMoOhe73xt5lriDOA' }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

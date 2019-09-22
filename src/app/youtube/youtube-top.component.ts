@@ -1,14 +1,17 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges, TrackByFunction, ViewChild } from '@angular/core';
+import {
+  AfterContentInit,
+  ChangeDetectionStrategy,
+  Component,
+  ViewChild
+} from '@angular/core';
 import { IVideo, YoutubeService } from './youtube.service';
-import { debounceTime, map, takeUntil, throttleTime } from 'rxjs/operators';
-import { bind, Throttle } from 'lodash-decorators';
+import { debounceTime, map, takeUntil } from 'rxjs/operators';
+import { Bind, Throttle } from 'lodash-decorators';
 import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
 import { FavoritesService } from '@app/youtube/favorites.service';
 import { IVideoVM } from '@app/youtube/ivideo-vm';
 import { FormControl } from '@angular/forms';
-import { DataSource } from '@angular/cdk/collections';
 import { BehaviorSubject } from 'rxjs';
-import { findNode } from '@angular/compiler';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 @Component({
@@ -17,59 +20,7 @@ import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
   styleUrls: ['./youtube-top.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class YoutubeTopComponent extends BaseVideoListComponent {
-
-  readonly searchInput = new FormControl();
-
-  @ViewChild(CdkVirtualScrollViewport, {static: true})
-  scrollViewport: CdkVirtualScrollViewport | undefined;
-  // set scrollViewport(value: CdkVirtualScrollViewport) {
-  //   value.re
-  //
-  //   value.renderedRangeStream
-  //     .pipe(
-  //       takeUntil(this.destroy),
-  //       throttleTime(300)
-  //     )
-  //     .subscribe(range => {
-  //       const itemsLeft = this._items.value.length - range.end + 1;
-  //
-  //       if (itemsLeft < this._youtube.maxChunkSize / 2)
-  //         this._requestNextChunk();
-  //     });
-  // }
-
-  // videoTracker: TrackByFunction<IVideoVM | 'loading'> = (_, video) => video === 'loading' ? video : video.id;
-
-  // get topVideos(): Iterable<IVideoVM | 'loading'> {
-  //   // console.log('get topVideos');
-  //   //
-  //   // return this._items;
-  //
-  //   // console.log(Array.from(this._topVideos()));
-  //
-  //   return this._topVideos();
-  // }
-
-  // readonly items = new Beh
-
-  @bind
-  private setQuery(value: string) {
-    if (this._query === value)
-      return;
-
-    this._query = value;
-
-    this._searchVideo(this._query);
-  }
-
-  private _query: string | undefined;
-
-  private _currentVideoSearch: AsyncIterableIterator<IVideo[]> | null = null;
-
-  private readonly _items = new BehaviorSubject<IVideoVM[]>([]);
-
-  readonly items = this._items.pipe(map(e => this._currentVideoSearch === null ? e : [...e, 'loading']));
+export class YoutubeTopComponent extends BaseVideoListComponent implements AfterContentInit {
 
   constructor(
     private _youtube: YoutubeService,
@@ -87,7 +38,23 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
 
     this.destroy
       .subscribe(() => this._cancelCurrentSearch());
+  }
 
+  readonly searchInput = new FormControl();
+
+  @Bind
+  private setQuery(value: string) {
+    if (this._query === value)
+      return;
+
+    this._query = value;
+
+    this._searchVideo(this._query);
+  }
+
+  private _query: string | undefined;
+
+  ngAfterContentInit(): void {
     this._searchVideo();
   }
 
@@ -110,7 +77,34 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
     this._items.next([]);
   }
 
+  private readonly _items = new BehaviorSubject<IVideoVM[]>([]);
+
+  readonly items = this._items.pipe(map(e => this._currentVideoSearch === null ? e : [...e, 'loading']));
+
+  private _currentVideoSearch: AsyncIterableIterator<IVideo[]> | null = null;
+
+  @ViewChild(CdkVirtualScrollViewport, { static: true })
+  set scrollViewport(value: CdkVirtualScrollViewport) {
+    (this._scrollViewport = value)
+      .elementScrolled()
+      .pipe(takeUntil(this.destroy))
+      .subscribe(this.checkNextRequest);
+  }
+
+  private _scrollViewport: CdkVirtualScrollViewport | undefined;
+
+  @Throttle(300)
+  @Bind
+  checkNextRequest() {
+    const itemsLeft = this._items.value.length - this._scrollViewport!.getRenderedRange().end + 1;
+
+    if (itemsLeft < this._youtube.maxChunkSize / 5)
+      this._requestNextChunk();
+  }
+
   private async _requestNextChunk() {
+    console.log('_requestNextChunk');
+
     if (this._currentVideoSearch === null || this._nextChunkRequest !== null)
       return;
 
@@ -121,21 +115,14 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
         this._currentVideoSearch = null;
 
       this._items.next(this._items.value.concat(chunk.map(this._toVM)));
-    }
-    finally {
+    } finally {
       this._nextChunkRequest = null;
     }
+
+    this.checkNextRequest();
   }
 
-  private _nextChunkRequest: ReturnType<AsyncIterableIterator<IVideo[]>['next']>|null = null;
-
-  @Throttle(300)
-  onItemScrolled() {
-    const itemsLeft = this._items.value.length - this.scrollViewport!.getRenderedRange().end + 1;
-
-    if (itemsLeft < this._youtube.maxChunkSize / 5)
-      this._requestNextChunk();
-  }
+  private _nextChunkRequest: ReturnType<AsyncIterableIterator<IVideo[]>['next']> | null = null;
 
   protected _createFavoriteControl(videoId: string): FormControl {
     const control = super._createFavoriteControl(videoId);

@@ -9,13 +9,13 @@ import { scan } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YoutubeComponent {
-  listMode: 'top' | 'favorites' = 'top';
+  constructor(private _logger: LoggerService) {}
 
   readonly logs = this._logger.logs
     .pipe(
       scan((acc: string[], cur: string) => acc.concat(cur), new Array<string>())
     );
 
-  constructor(private _logger: LoggerService) {}
+  listMode: 'top' | 'favorites' = 'top';
 }
 

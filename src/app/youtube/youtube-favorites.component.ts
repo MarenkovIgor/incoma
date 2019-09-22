@@ -4,7 +4,7 @@ import { FavoritesService } from '@app/youtube/favorites.service';
 import { concat, ConnectableObservable, Observable, of, ReplaySubject } from 'rxjs';
 import { map, publishReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
-import { arrayMap } from '@app/utils/rxjs';
+import { arrayMap } from '@app/common/rxjs';
 import { IVideoVM } from '@app/youtube/ivideo-vm';
 import { Bind } from 'lodash-decorators';
 
@@ -15,9 +15,6 @@ import { Bind } from 'lodash-decorators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YoutubeFavoritesComponent extends BaseVideoListComponent {
-  // readonly videos = this._initItems();
-  videos: IVideoVM[] = [];
-
   constructor(
     private _youtube: YoutubeService,
     private _cdr: ChangeDetectorRef,
@@ -38,31 +35,6 @@ export class YoutubeFavoritesComponent extends BaseVideoListComponent {
 
         this._cdr.markForCheck();
       });
-
-    // (async () => {
-    //   try {
-    //     this.videos = await this._youtube.getVideos(this._favorites.values)
-    //       .pipe(
-    //         this.throwIfDestroy(),
-    //         arrayMap(this._toVM)
-    //       )
-    //       .toPromise();
-    //
-    //     favoritesChanges
-    //       .pipe(
-    //         switchMap(this._updateVideos)
-    //       )
-    //       .subscribe(
-    //         updatedVideos => this.videos = updatedVideos
-    //       );
-    //
-    //   } catch(ex) {
-    //     if(ex instanceof DestroyException)
-    //       return;
-    //
-    //     throw;
-    //   }
-    // })();
   }
 
   @Bind
@@ -74,12 +46,5 @@ export class YoutubeFavoritesComponent extends BaseVideoListComponent {
       : of(this.videos.filter(video => video.id !== id));
   }
 
-  // private _initItems() {
-  //   return this._favorites
-  //     .list
-  //     .pipe(
-  //       switchMap(ids => this._youtube.getVideos(ids)),
-  //       arrayMap(this._toVM)
-  //     );
-  // }
+  videos: IVideoVM[] = [];
 }
