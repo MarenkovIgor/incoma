@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  flex-flow: column;
+
+  width: 500px;
+  height: 100%;
+
+  .content {
+    height: 500px;
+    width: 100%;
+
+    border-color: black;
+    border-style: inset;
+    border-width: 1px;
+
+    margin-top: 5px;
+  }
+
+  .logs {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+}

@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  flex-flow: row;
+
+  width: 100%;
+  height: 100%;
+
+  background-color: gainsboro;
+
+  .title {
+    margin-right: 5px;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+  }
+
+  .favorite {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+  }
+}

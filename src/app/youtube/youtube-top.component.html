@@ -1,11 +1,16 @@
-<cdk-virtual-scroll-viewport itemSize="50" (scrolledIndexChange)="onItemScrolled($event)">
-  <ol>
-    <li *cdkVirtualFor="let video of topVideos">
+<label class="query">
+  Search video
+  <input type="text" [formControl]="searchInput"/>
+</label>
+
+<cdk-virtual-scroll-viewport itemSize="50"  (scrolledIndexChange)="onItemScrolled()" >
+
+    <div *cdkVirtualFor="let video of items" class="video-item">
       <ints-youtube-video *ngIf="video !== 'loading'; else loaderIndicator" [data]="video">
       </ints-youtube-video>
       <ng-template #loaderIndicator>
         <span>Loading...</span>
       </ng-template>
-    </li>
-  </ol>
+    </div>
+
 </cdk-virtual-scroll-viewport>

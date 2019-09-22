@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { YoutubeService } from '@app/youtube/youtube.service';
 import { FavoritesService } from '@app/youtube/favorites.service';
-import { map, switchMap } from 'rxjs/operators';
+import { concat, ConnectableObservable, Observable, of, ReplaySubject } from 'rxjs';
+import { map, publishReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
 import { arrayMap } from '@app/utils/rxjs';
+import { IVideoVM } from '@app/youtube/ivideo-vm';
+import { Bind } from 'lodash-decorators';
 
 @Component({
   selector: 'ints-youtube-favorites',
@@ -12,21 +15,71 @@ import { arrayMap } from '@app/utils/rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YoutubeFavoritesComponent extends BaseVideoListComponent {
-  readonly videos = this._initItems();
+  // readonly videos = this._initItems();
+  videos: IVideoVM[] = [];
 
   constructor(
     private _youtube: YoutubeService,
+    private _cdr: ChangeDetectorRef,
     favorites: FavoritesService
   ) {
     super(favorites);
+
+    const favoritesChanges = this._favorites.changes.pipe(takeUntil(this.destroy), publishReplay());
+    (favoritesChanges as ConnectableObservable<any>).connect();
+
+    concat(
+      this._youtube.getVideos(this._favorites.values).pipe(arrayMap(this._toVM)),
+      favoritesChanges.pipe(switchMap(this._updateVideos))
+    )
+      .pipe(takeUntil(this.destroy))
+      .subscribe(videos => {
+        this.videos = videos;
+
+        this._cdr.markForCheck();
+      });
+
+    // (async () => {
+    //   try {
+    //     this.videos = await this._youtube.getVideos(this._favorites.values)
+    //       .pipe(
+    //         this.throwIfDestroy(),
+    //         arrayMap(this._toVM)
+    //       )
+    //       .toPromise();
+    //
+    //     favoritesChanges
+    //       .pipe(
+    //         switchMap(this._updateVideos)
+    //       )
+    //       .subscribe(
+    //         updatedVideos => this.videos = updatedVideos
+    //       );
+    //
+    //   } catch(ex) {
+    //     if(ex instanceof DestroyException)
+    //       return;
+    //
+    //     throw;
+    //   }
+    // })();
   }
 
-  private _initItems() {
-    return this._favorites
-      .list
-      .pipe(
-        switchMap(ids => this._youtube.getVideos(ids)),
-        arrayMap(this._toVM)
-      );
+  @Bind
+  private _updateVideos(changes: {id: string, action: 'add'|'remove'}): Observable<IVideoVM[]> {
+    const { id, action } = changes;
+
+    return action === 'add'
+      ? this._youtube.getVideos([id]).pipe(arrayMap(this._toVM), map(newItem => this.videos.concat(newItem)))
+      : of(this.videos.filter(video => video.id !== id));
   }
+
+  // private _initItems() {
+  //   return this._favorites
+  //     .list
+  //     .pipe(
+  //       switchMap(ids => this._youtube.getVideos(ids)),
+  //       arrayMap(this._toVM)
+  //     );
+  // }
 }

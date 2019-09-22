@@ -1,16 +1,16 @@
 <div class="toolbar">
   <button class="top-list" (click)="listMode = 'top'">Youtube top video</button>
-  <button class="favorites-list" (click)="listMode = 'top'">Youtube top video</button>
-
-  <label>
-    Search video
-    <input type="text" [formControl]="searchInput"/>
-  </label>
+  <button class="favorites-list" (click)="listMode = 'favorites'">Favorites</button>
 </div>
-<div [ngSwitch]="listMode">
-  <ints-youtube-top *ngSwitchCase="'top'" [query]="searchQuery | async">
+<div class="content">
+  <ints-youtube-top [hidden]="listMode !== 'top'">
   </ints-youtube-top>
-  <ints-youtube-favorites *ngSwitchCase="'favorites'">
+  <ints-youtube-favorites [hidden]="listMode !== 'favorites'">
   </ints-youtube-favorites>
 </div>
-<div class="status"></div>
+
+<ul class="logs">
+  <li *ngFor="let log of logs | async">
+    {{log}}
+  </li>
+</ul>

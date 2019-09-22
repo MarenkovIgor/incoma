@@ -1,12 +1,15 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
-import { IVideo, IVideoSearch, YoutubeService } from './youtube.service';
-import { takeUntil } from 'rxjs/operators';
-import { arrayMap } from '@app/utils/rxjs';
-import { Subscription } from 'rxjs';
-import { Throttle } from 'lodash-decorators';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges, TrackByFunction, ViewChild } from '@angular/core';
+import { IVideo, YoutubeService } from './youtube.service';
+import { debounceTime, map, takeUntil, throttleTime } from 'rxjs/operators';
+import { bind, Throttle } from 'lodash-decorators';
 import { BaseVideoListComponent } from '@app/youtube/base-video-list.component';
 import { FavoritesService } from '@app/youtube/favorites.service';
 import { IVideoVM } from '@app/youtube/ivideo-vm';
+import { FormControl } from '@angular/forms';
+import { DataSource } from '@angular/cdk/collections';
+import { BehaviorSubject } from 'rxjs';
+import { findNode } from '@angular/compiler';
+import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 @Component({
   selector: 'ints-youtube-top',
@@ -16,12 +19,42 @@ import { IVideoVM } from '@app/youtube/ivideo-vm';
 })
 export class YoutubeTopComponent extends BaseVideoListComponent {
 
-  get topVideos(): Iterable<IVideoVM | 'loading'> {
-    return this._topVideos();
-  }
+  readonly searchInput = new FormControl();
 
-  @Input()
-  set query(value: string | null) {
+  @ViewChild(CdkVirtualScrollViewport, {static: true})
+  scrollViewport: CdkVirtualScrollViewport | undefined;
+  // set scrollViewport(value: CdkVirtualScrollViewport) {
+  //   value.re
+  //
+  //   value.renderedRangeStream
+  //     .pipe(
+  //       takeUntil(this.destroy),
+  //       throttleTime(300)
+  //     )
+  //     .subscribe(range => {
+  //       const itemsLeft = this._items.value.length - range.end + 1;
+  //
+  //       if (itemsLeft < this._youtube.maxChunkSize / 2)
+  //         this._requestNextChunk();
+  //     });
+  // }
+
+  // videoTracker: TrackByFunction<IVideoVM | 'loading'> = (_, video) => video === 'loading' ? video : video.id;
+
+  // get topVideos(): Iterable<IVideoVM | 'loading'> {
+  //   // console.log('get topVideos');
+  //   //
+  //   // return this._items;
+  //
+  //   // console.log(Array.from(this._topVideos()));
+  //
+  //   return this._topVideos();
+  // }
+
+  // readonly items = new Beh
+
+  @bind
+  private setQuery(value: string) {
     if (this._query === value)
       return;
 
@@ -30,85 +63,92 @@ export class YoutubeTopComponent extends BaseVideoListComponent {
     this._searchVideo(this._query);
   }
 
-  private _query: string | null = null;
+  private _query: string | undefined;
 
   private _currentVideoSearch: AsyncIterableIterator<IVideo[]> | null = null;
-  // @ts-ignore
-  // private _currentVideoSearch: IVideoSearch;
 
-  private _items: IVideoVM[] = [];
-  private _nextChunkSubscription: Subscription | null = null;
-  private readonly _requestLength = this._youtube.maxItemsInResponse;
+  private readonly _items = new BehaviorSubject<IVideoVM[]>([]);
+
+  readonly items = this._items.pipe(map(e => this._currentVideoSearch === null ? e : [...e, 'loading']));
 
   constructor(
     private _youtube: YoutubeService,
-    private _cdr: ChangeDetectorRef,
     favoritesStorage: FavoritesService
   ) {
     super(favoritesStorage);
 
+    this.searchInput
+      .valueChanges
+      .pipe(
+        debounceTime(300),
+        takeUntil(this.destroy),
+      )
+      .subscribe(this.setQuery);
+
+    this.destroy
+      .subscribe(() => this._cancelCurrentSearch());
+
     this._searchVideo();
   }
 
-  private _searchVideo(query?: string | null) {
-    if (this._currentVideoSearch !== null && this._currentVideoSearch.return)
-      this._currentVideoSearch.return();
+  private _searchVideo(query?: string) {
+    this._cancelCurrentSearch();
 
-    this._currentVideoSearch = this._youtube.initVideoSearch2(query);
+    this._items.next([]);
+
+    this._currentVideoSearch = this._youtube.searchVideo(query);
 
     this._requestNextChunk();
   }
 
-  private _requestNextChunk() {
-    if (this._currentVideoSearch === null)
+  private _cancelCurrentSearch() {
+    if (this._currentVideoSearch !== null && this._currentVideoSearch.return)
+      this._currentVideoSearch.return();
+
+    this._currentVideoSearch = null;
+
+    this._items.next([]);
+  }
+
+  private async _requestNextChunk() {
+    if (this._currentVideoSearch === null || this._nextChunkRequest !== null)
       return;
+
+    try {
+      const { value: chunk, done } = await (this._nextChunkRequest = this._currentVideoSearch.next());
+
+      if (done)
+        this._currentVideoSearch = null;
+
+      this._items.next(this._items.value.concat(chunk.map(this._toVM)));
+    }
+    finally {
+      this._nextChunkRequest = null;
+    }
   }
 
-  // private _searchVideo(query?: string | null) {
-  //   if (this._nextChunkSubscription != null)
-  //     this._nextChunkSubscription.unsubscribe();
-  //
-  //   this._currentVideoSearch = this._youtube.initTopVideoSearch(query);
-  //
-  //   this._requestNextChunk();
-  // }
+  private _nextChunkRequest: ReturnType<AsyncIterableIterator<IVideo[]>['next']>|null = null;
 
-  // private _requestNextChunk() {
-  //   if (this._nextChunkSubscription === null || this._currentVideoSearch.finished)
-  //     return;
-  //
-  //   this._nextChunkSubscription =
-  //     this._currentVideoSearch
-  //       .getNextChunk(this._requestLength)
-  //       .pipe(
-  //         takeUntil(this.destroy),
-  //         arrayMap(this._toVM)
-  //       )
-  //       .subscribe(
-  //         dataChunk => this._items.push(...dataChunk)
-  //       );
-  //
-  //   this._nextChunkSubscription
-  //     .add(() => {
-  //       this._nextChunkSubscription = null;
-  //       this._cdr.markForCheck();
-  //     });
-  // }
-
-  private* _topVideos() {
-    yield* this._items;
-
-    if (this._nextChunkSubscription !== null)
-      yield 'loading';
-  }
-
-  //TODO как тут будет работать change detection
   @Throttle(300)
-  onItemScrolled(scrolledItems: number) {
-    const itemsLeft = this._items.length - scrolledItems;
+  onItemScrolled() {
+    const itemsLeft = this._items.value.length - this.scrollViewport!.getRenderedRange().end + 1;
 
-    if (itemsLeft <= this._requestLength)
+    if (itemsLeft < this._youtube.maxChunkSize / 5)
       this._requestNextChunk();
+  }
+
+  protected _createFavoriteControl(videoId: string): FormControl {
+    const control = super._createFavoriteControl(videoId);
+
+    this._favorites
+      .changes
+      .pipe(takeUntil(this.destroy))
+      .subscribe(({ id, action }) => {
+        if (id === videoId)
+          control.setValue(action === 'add');
+      });
+
+    return control;
   }
 }
 

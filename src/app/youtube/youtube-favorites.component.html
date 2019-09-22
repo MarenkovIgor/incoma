@@ -1,5 +1,8 @@
-<ul>
+<ul *ngIf="videos.length > 0; else loading">
   <li *ngFor="let video of videos">
     <ints-youtube-video [data]="video"></ints-youtube-video>
   </li>
 </ul>
+<ng-template #loading>
+  Loading...
+</ng-template>

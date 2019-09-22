@@ -1,7 +1,7 @@
 <ng-container *ngIf="data != null">
-  {{data.title}}
+  <span class="title">{{data.title}}</span>
 
-  <label>
+  <label class="favorite">
     Favorite
     <input type="checkbox" [formControl]="data.isFavorite"/>
   </label>

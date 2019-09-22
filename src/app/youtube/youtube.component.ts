@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {FormControl} from '@angular/forms';
-import {debounceTime} from 'rxjs/operators';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { LoggerService } from '@app/services/logger.service';
+import { scan } from 'rxjs/operators';
 
 @Component({
   selector: 'ints-youtube',
@@ -11,8 +11,11 @@ import {debounceTime} from 'rxjs/operators';
 export class YoutubeComponent {
   listMode: 'top' | 'favorites' = 'top';
 
-  readonly searchInput = new FormControl();
+  readonly logs = this._logger.logs
+    .pipe(
+      scan((acc: string[], cur: string) => acc.concat(cur), new Array<string>())
+    );
 
-  readonly searchQuery = this.searchInput.valueChanges.pipe(debounceTime(300));
+  constructor(private _logger: LoggerService) {}
 }
 
